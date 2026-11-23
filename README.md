@@ -1,78 +1,91 @@
-# Context Duel
+# Context Duel 🎯
 
-An online, turn-based multiplayer word semantic battle developed by **Piyush Gupta**.
+> **A real-time, turn-based multiplayer word semantic game created and developed by [Piyush Gupta](https://github.com/Piyush-Gupta04).**
 
-- **Live Web Application**: [https://context-duel.onrender.com](https://context-duel.onrender.com)
-- **Developer**: [Piyush Gupta (Piyush-Gupta04)](https://github.com/Piyush-Gupta04)
-
----
-
-## What is Context Duel?
-
-Context Duel is a vocabulary and meaning-association guessing game where players compete to find a hidden secret word.
-
-Unlike letter-based puzzle games, Context Duel measures **contextual meaning**:
-- The server evaluates guesses against a 30,000-word dataset using vector embeddings.
-- Every word receives a numeric proximity score from 1 to 30,000.
-- **Rank 1** is the secret target word itself.
-- Lower ranks mean your guess is closer in concept to the hidden word.
+🎮 **Live Game Link (Play Anytime on Mobile or PC)**:  
+👉 **[https://context-duel.onrender.com](https://context-duel.onrender.com)**
 
 ---
 
-## How to Play
+## 🌐 24/7 Cloud Deployment
 
-### 1. Multiplayer Mode (Duel)
-1. Open [https://context-duel.onrender.com](https://context-duel.onrender.com).
-2. Type your name, pick a difficulty (Easy, Medium, or Hard), and select **Create a game for two**.
-3. Send the generated 4-letter room code to your friend.
-4. Your friend visits the link, enters their name and the 4-letter code under **Join**, and enters the room.
-5. Take turns submitting words. Both players see all guesses and ranks in real-time.
-6. The first player to submit the secret word (Rank 1) wins the match!
+The game is **live and hosted around the clock** in the cloud on Render. 
+
+- **Play Anytime**: Accessible 24/7 from any smartphone, tablet, or computer.
+- **Zero Install**: Runs straight in your mobile browser (Safari, Chrome, etc.) with no apps to download or accounts to create.
+- **Always Online**: Hosted independently on cloud infrastructure — runs continuously even when the developer's computer is completely shut down.
+
+---
+
+## 📖 What is Context Duel?
+
+Context Duel is a competitive, contextual word-association game. 
+
+Instead of guessing spelling or letter positions, you compete to discover a hidden secret word based purely on **meaning and semantic similarity**:
+
+- The engine evaluates every guess against a 30,000-word dictionary using vector embeddings.
+- Every guess receives an instant proximity rank from **1 to 30,000**:
+  - **Rank 1**: The hidden secret word itself (Winner!).
+  - **Rank 2 – 300**: Extremely hot! You are right around the concept.
+  - **Rank 301 – 1,500**: Warm, closely related category or theme.
+  - **Rank 1,501+**: Cold, distant semantic meaning.
+
+---
+
+## 📱 How to Play (Mobile & Desktop)
+
+### 1. Two-Player Live Duel (1v1)
+1. Open **[https://context-duel.onrender.com](https://context-duel.onrender.com)** on your phone or PC.
+2. Enter your player name, select a difficulty (**Easy**, **Medium**, or **Hard**), and tap **Create a game for two**.
+3. Copy the **4-letter game room code** and send it to your friend (via WhatsApp, iMessage, Discord, etc.).
+4. Your friend opens the link on their phone, types their name, enters the 4-letter code under **Join**, and jumps in.
+5. Take alternating turns submitting guesses. Both players see every guess and its rank update in real-time.
+6. The first player to submit the secret word (**Rank 1**) wins the duel!
 
 ### 2. Solo Practice Mode
-- Choose **Solo** on the home screen to test and sharpen your word association skills at your own pace.
+- Want to train your vocabulary alone? Tap **Solo** on the home screen to find the secret word in as few turns as possible.
 
-### 3. Understanding the Ranks
-- **Rank 1**: The exact target word (Victory!).
-- **Ranks 2 - 300**: Extremely close in concept or theme (Green indicator).
-- **Ranks 301 - 1,500**: Related context or category (Yellow indicator).
-- **Ranks 1,501+**: Distant concept (Gray indicator).
-
-### 4. Hints
-- During your turn, you can take a hint if you need guidance. The system will reveal a simpler related word to help narrow your search without spoiling rank 1.
+### 3. Smart Hints
+- If you and your opponent are stuck, you can use the **Hint** button on your turn.
+- The hint system gives a simpler, common word that moves you closer to the target without revealing ranks below 2.
 
 ---
 
-## Technical Architecture
+## 🛠️ Technical Highlights
 
-- **Zero NPM Runtime Dependencies**: The entire backend server runs solely on native Node.js core modules (`http`, `fs`, `path`), eliminating package vulnerabilities and heavy dependencies.
-- **Vector Space Matching**: Evaluates 100-dimensional quantized word vectors in memory, delivering instant ranking calculations.
-- **In-Memory Game Engine**: Game sessions and turns are synchronized in lightweight server memory with automatic cleanup of inactive rooms.
-- **Built-in Security**: Includes defense-in-depth headers, per-IP request rate limiting, and strict path boundary checks.
-- **Responsive Web Client**: Accessible across smartphones, tablets, and desktop computers with native dark/light theme support.
-
----
-
-## Local Setup
-
-### Requirements
-- Node.js version 18 or higher
-
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Piyush-Gupta04/context-duel.git
-   cd context-duel
-   ```
-2. Start the application:
-   ```bash
-   node server.js
-   ```
-3. Open `http://localhost:3000` in your web browser.
+- **Zero NPM Dependencies**: Built 100% on native Node.js core modules (`http`, `fs`, `path`). No third-party package dependencies, zero supply-chain risk, and zero bloat.
+- **Fast In-Memory Vector Search**: 100-dimensional quantized word vectors (~3 MB) deliver sub-millisecond ranking calculations across 30,000 words.
+- **Real-Time Memory State**: Active rooms and turns are tracked efficiently in lightweight server memory with automatic garbage collection after periods of inactivity.
+- **Hardened Security**: Includes defense-in-depth HTTP headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`), per-IP rate limiting, and strict path boundary checks.
+- **Responsive Mobile UI**: Pure vanilla CSS with dynamic dark/light theme support, custom typography, and touch-optimized controls.
 
 ---
 
-## Author
+## 💻 Local Development (Optional)
 
-- **Piyush Gupta**  
-  GitHub: [@Piyush-Gupta04](https://github.com/Piyush-Gupta04)
+If you wish to clone and run the project locally on your machine:
+
+### Prerequisites
+- Node.js 18 or newer
+
+### Quick Start
+```bash
+# 1. Clone the repository
+git clone https://github.com/Piyush-Gupta04/context-duel.git
+cd context-duel
+
+# 2. Start the server (no npm install needed!)
+node server.js
+
+# 3. Open in your browser
+http://localhost:3000
+```
+
+---
+
+## 👨‍💻 Developer & Credits
+
+**Piyush Gupta**  
+- GitHub: [@Piyush-Gupta04](https://github.com/Piyush-Gupta04)  
+- Live Game: [https://context-duel.onrender.com](https://context-duel.onrender.com)  
+- Repository: [Piyush-Gupta04/context-duel](https://github.com/Piyush-Gupta04/context-duel)

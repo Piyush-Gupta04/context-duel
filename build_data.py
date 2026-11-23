@@ -1,0 +1,55 @@
+"""
+Builds data/words.txt, data/vectors.bin and data/secrets.json.
+
+You do NOT need to run this: the finished files are already in the data/ folder.
+Run it only if you want to change the vocabulary size or the secret-word lists.
+
+    pip install gensim wordfreq numpy
+    python3 build_data.py
+
+Needs internet once (downloads GloVe vectors, about 130 MB).
+"""
+import json, re
+import numpy as np
+import gensim.downloader as api
+from wordfreq import top_n_list
+
+VOCAB_SIZE = 30000      # how many words can be guessed
+DIM = 100
+
+SECRETS = {
+    "easy": "dog cat house tree water fire sun moon star car bus train boat plane book pen apple bread milk cake egg fish bird horse cow pig sheep chicken school teacher doctor baby mother father friend shoe hat shirt chair table bed door window phone ball rain snow wind cloud beach river lake mountain flower grass rice tea sugar salt cup plate spoon knife clock key box bag street road shop farm garden kitchen bike toy doll game music song dance smile".split(),
+    "medium": "ocean forest desert island thunder rainbow sunset bridge castle tower mirror candle blanket pillow ladder hammer umbrella suitcase compass lantern battery engine rocket airport station tunnel bicycle balloon guitar piano drum concert theater museum library painting chocolate coffee cheese lemon banana pumpkin soup pizza sandwich honey breakfast dinner farmer pilot soldier painter chef pirate wizard dragon ghost monster robot angel princess king knight tiger elephant dolphin eagle butterfly spider rabbit wolf penguin turtle giraffe monkey shark snake owl bee frog camel whale football cricket tennis swimming chess puzzle trophy birthday wedding holiday festival picnic adventure journey treasure planet winter summer storm ice lightning computer keyboard camera money bank market hospital jungle cave valley hill bone heart brain blood tooth medicine sleep".split(),
+    "hard": "freedom justice silence courage wisdom memory danger victory luck power secret energy gravity mystery dream shadow anger happiness friendship beauty hope fear truth time peace war change balance speed pressure habit rule choice story art history future past nature wealth honor patience pride shame joy love hate doubt faith risk goal plan trick signal password magnet universe comet earthquake smoke laughter tears".split(),
+}
+
+print("Loading GloVe...")
+kv = api.load("glove-wiki-gigaword-100")
+
+ok = re.compile(r"^[a-z]{3,14}$")
+words = []
+seen = set()
+must = {w for lst in SECRETS.values() for w in lst}
+for w in top_n_list("en", 90000):
+    if len(words) >= VOCAB_SIZE:
+        break
+    if w in seen or not ok.match(w) or w not in kv.key_to_index:
+        continue
+    seen.add(w)
+    words.append(w)
+for w in sorted(must):                       # make sure every secret word is guessable
+    if w not in seen and w in kv.key_to_index:
+        words.append(w); seen.add(w)
+
+vecs = np.array([kv[w] for w in words], dtype=np.float32)
+vecs -= vecs.mean(axis=0)                    # centering makes similarity sharper
+vecs /= np.linalg.norm(vecs, axis=1, keepdims=True)
+q = np.clip(np.round(vecs * 127), -127, 127).astype(np.int8)
+
+with open("data/words.txt", "w") as f:
+    f.write("\n".join(words))
+q.tofile("data/vectors.bin")
+
+secrets = {k: [w for w in v if w in seen] for k, v in SECRETS.items()}
+json.dump(secrets, open("data/secrets.json", "w"))
+print(len(words), "words;", {k: len(v) for k, v in secrets.items()})

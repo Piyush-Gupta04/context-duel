@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Context Duel</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 22'%3E%3Ccircle cx='11' cy='11' r='9' fill='none' stroke='%234A5AD0' stroke-width='2.4'/%3E%3Ccircle cx='23' cy='11' r='9' fill='none' stroke='%23BE3A8A' stroke-width='2.4'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>
+html{color-scheme:light}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: one 560px column. Lobby = pitch + start card + worked example. Game = two player cards, turn line, guess field, latest guess, ranked list of every guess from both players. */
+:root{
+  --bg:#F2F4F0; --surface:#FFFFFF; --surface2:#E7ECE5; --fg:#15201A; --muted:#58675F; --line:#D5DBD3;
+  --accent:#17695A; --on-accent:#FFFFFF;
+  --p1:#4A5AD0; --p2:#BE3A8A; --on-p:#FFFFFF;
+  --near:#2C9A5A; --mid:#D79A14; --far:#7B8A99; --bar-alpha:.26;
+  --danger:#B33A2C;
+  --f-display:"Bricolage Grotesque","Avenir Next","Segoe UI",system-ui,sans-serif;
+  --f-body:"DM Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1513; --surface:#172019; --surface2:#1F2B23; --fg:#E7EEE9; --muted:#93A39A; --line:#2A372F;
+    --accent:#5FD0A8; --on-accent:#0B1A14;
+    --p1:#8D9BFF; --p2:#F07AC0; --on-p:#0F1513;
+    --near:#4CC983; --mid:#E8B84A; --far:#6F7F8F; --bar-alpha:.34;
+    --danger:#FF8F80;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1513; --surface:#172019; --surface2:#1F2B23; --fg:#E7EEE9; --muted:#93A39A; --line:#2A372F;
+  --accent:#5FD0A8; --on-accent:#0B1A14;
+  --p1:#8D9BFF; --p2:#F07AC0; --on-p:#0F1513;
+  --near:#4CC983; --mid:#E8B84A; --far:#6F7F8F; --bar-alpha:.34;
+  --danger:#FF8F80;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); font:16px/1.5 var(--f-body);
+  padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3,p,ol{margin:0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mark{display:flex;align-items:center;gap:10px;font:700 1.3rem/1 var(--f-display);letter-spacing:-.01em}
+.mark svg{width:34px;height:22px;flex:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.btn{min-height:46px;padding:0 18px;border-radius:10px;border:1px solid transparent;font:600 1rem var(--f-body);cursor:pointer;white-space:nowrap}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:var(--on-accent)}
+.btn-quiet{background:transparent;border-color:var(--line);color:var(--fg)}
+.btn-small{min-height:36px;padding:0 12px;font-size:.9rem}
+.btn:focus-visible,.field:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.field{width:100%;min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:0 14px;font:16px var(--f-body)}
+.field:disabled{opacity:.55}
+label.lbl{display:block;font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.muted{color:var(--muted)}
+.small{font-size:.88rem}
+.msg{min-height:1.4em;font-size:.92rem}
+.msg[data-kind="error"]{color:var(--danger)}
+.msg[data-kind="busy"]{color:var(--muted)}
+
+/* lobby */
+.pitch h2{font:700 clamp(1.7rem,7vw,2.2rem)/1.08 var(--f-display);letter-spacing:-.02em;text-wrap:balance}
+.pitch p{margin-top:10px;color:var(--muted)}
+.steps{padding:0;list-style:none;display:flex;flex-direction:column;gap:8px;counter-reset:s}
+.steps li{display:flex;gap:12px;align-items:baseline}
+.steps li::before{counter-increment:s;content:counter(s);font:600 .85rem var(--f-mono);color:var(--accent);flex:none;width:1.2em}
+.split{display:flex;gap:10px;align-items:flex-end}
+.split>div{flex:1;min-width:0}
+.or{display:flex;align-items:center;gap:12px;color:var(--muted);font:500 .8rem var(--f-mono);text-transform:uppercase;letter-spacing:.06em}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.example-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.example-h h3,.sec-h h3{font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* rows */
+.rows{display:flex;flex-direction:column;gap:6px}
+.row{position:relative;display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-radius:10px;background:var(--surface);border:1px solid var(--line);overflow:hidden}
+.row.latest{border-color:var(--accent);border-width:2px;padding:0 13px}
+.row .bar{position:absolute;left:0;top:0;bottom:0;background:var(--c);opacity:var(--bar-alpha);transition:width .4s ease}
+.row>*:not(.bar){position:relative}
+.r-near{--c:var(--near)} .r-mid{--c:var(--mid)} .r-far{--c:var(--far)}
+.row .w{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}
+.row .rk{font:600 .95rem var(--f-mono);font-variant-numeric:tabular-nums}
+.who{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:700 .68rem var(--f-display);background:var(--pc);color:var(--on-p);flex:none}
+.host{--pc:var(--p1)} .guest{--pc:var(--p2)}
+.tag{font:600 .68rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+
+/* game */
+.code-chip{display:flex;align-items:center;gap:8px}
+.code-chip .code{font:600 1.05rem var(--f-mono);letter-spacing:.18em;padding:6px 10px;border-radius:8px;background:var(--surface2);user-select:all}
+.players{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pl{padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);display:flex;flex-direction:column;gap:6px;min-width:0}
+.pl.active{outline:2px solid var(--pc);outline-offset:-1px}
+.pl-top{display:flex;align-items:center;gap:8px;min-width:0}
+.av{width:28px;height:28px;border-radius:50%;background:var(--pc);color:var(--on-p);font:700 .85rem var(--f-display);display:grid;place-items:center;flex:none}
+.pl-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pl-stat{font-size:.85rem;color:var(--muted)}
+.turn{font-weight:500;min-height:1.5em}
+.guess-form{display:flex;gap:10px}
+.guess-form .field{flex:1;min-width:0}
+.win{border-color:var(--accent);border-width:2px;padding:17px}
+.win .big{font:700 clamp(2rem,10vw,2.8rem)/1.05 var(--f-display);letter-spacing:-.02em;overflow-wrap:anywhere}
+.win .actions{display:flex;gap:10px;flex-wrap:wrap}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+.empty{padding:18px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);text-align:center}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.85rem}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg button{min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);font:600 .95rem var(--f-body);cursor:pointer}
+.seg button[aria-checked="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.players.solo{grid-template-columns:1fr}
+.hint-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.hint-tag{font:600 .65rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:1px 6px;flex:none}
+@media (prefers-reduced-motion:reduce){.row .bar{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="mark">
+      <svg viewBox="0 0 34 22" aria-hidden="true"><circle cx="11" cy="11" r="9" fill="none" stroke="var(--p1)" stroke-width="2.4"/><circle cx="23" cy="11" r="9" fill="none" stroke="var(--p2)" stroke-width="2.4"/></svg>
+      <span>Context Duel</span>
+    </div>
+    <button class="btn btn-quiet btn-small" id="leaveBtn" type="button" hidden>Leave game</button>
+  </header>
+
+  <main id="lobby" class="wrap">
+    <section class="pitch">
+      <h2>Guess the hidden word. Lower number means closer.</h2>
+      <p>Play a friend online, taking turns on one secret word, or play on your own. Every guess gets a rank by how close its meaning is to the secret. Whoever types the secret word wins.</p>
+    </section>
+
+    <section class="card" aria-labelledby="startH">
+      <h3 id="startH" class="sec-h" style="margin:0"><span style="font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Start playing</span></h3>
+      <div>
+        <label class="lbl" for="name">Your name</label>
+        <input class="field" id="name" maxlength="16" autocomplete="off" placeholder="What should your friend see?">
+      </div>
+      <div>
+        <span class="lbl" id="levelLbl">Difficulty</span>
+        <div class="seg" role="radiogroup" aria-labelledby="levelLbl" id="levelSeg">
+          <button type="button" role="radio" aria-checked="false" data-level="easy">Easy</button>
+          <button type="button" role="radio" aria-checked="false" data-level="medium">Medium</button>
+          <button type="button" role="radio" aria-checked="false" data-level="hard">Hard</button>
+        </div>
+        <p class="muted small" id="levelNote" style="margin-top:8px"></p>
+      </div>
+      <button class="btn btn-primary" id="createBtn" type="button">Create a game for two</button>
+      <button class="btn btn-quiet" id="soloBtn" type="button">Play on my own</button>
+      <div class="or">or join</div>
+      <div class="split">
+        <div>
+          <label class="lbl" for="joinCode">Game code</label>
+          <input class="field" id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD" style="font-family:var(--f-mono);letter-spacing:.2em;text-transform:uppercase">
+        </div>
+        <button class="btn btn-quiet" id="joinBtn" type="button">Join</button>
+      </div>
+      <p class="msg" id="lobbyMsg" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="rows" aria-label="Example">
+      <div class="example-h"><h3 style="font:600 .78rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)">Example, secret word “ocean”</h3></div>
+      <div class="row r-near"><span class="bar" style="width:74%"></span><span class="w">wave</span><span class="rk">14</span></div>
+      <div class="row r-mid"><span class="bar" style="width:42%"></span><span class="w">ship</span><span class="rk">412</span></div>
+      <div class="row r-far"><span class="bar" style="width:3%"></span><span class="w">tuesday</span><span class="rk">21,300</span></div>
+    </section>
+
+    <ol class="steps">
+      <li><span>Pick a difficulty, create a game and send your friend the link plus the 4-letter code.</span></li>
+      <li><span>Take turns. Each word you type gets a rank by how close its meaning is to the secret word.</span></li>
+      <li><span>Every word in the list is ranked out of 30,000. Rank 1 is the secret word itself.</span></li>
+      <li><span>Stuck? A hint adds a closer word to your list, all the way down to rank 2. It never uses your turn.</span></li>
+    </ol>
+  </main>
+
+  <main id="game" class="wrap" hidden>
+    <div class="code-chip" id="codeChip">
+      <span class="muted small">Game code</span>
+      <span class="code" id="codeVal"></span>
+      <button class="btn btn-quiet btn-small" id="copyBtn" type="button">Copy invite</button>
+    </div>
+    <p class="msg" id="syncNote" role="status" aria-live="polite"></p>
+
+    <span class="tag" id="levelTag"></span>
+    <div class="players" id="players"></div>
+
+    <section class="card win" id="banner" hidden>
+      <span class="tag" id="bannerTag"></span>
+      <div class="big" id="bannerWord"></div>
+      <p class="muted" id="bannerSub"></p>
+      <div class="actions"><button class="btn btn-primary" id="againBtn" type="button">Play again</button></div>
+    </section>
+
+    <p class="turn" id="turn" role="status" aria-live="polite"></p>
+
+    <form class="guess-form" id="guessForm" hidden>
+      <label class="lbl" for="guessInput" style="position:absolute;left:-9999px">Your guess</label>
+      <input class="field" id="guessInput" maxlength="28" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="Type one word">
+      <button class="btn btn-primary" id="guessBtn" type="submit">Guess</button>
+    </form>
+    <div class="hint-row" id="hintRow" hidden>
+      <button class="btn btn-quiet btn-small" id="hintBtn" type="button">Get a hint</button>
+      <span class="muted small" id="hintNote"></span>
+    </div>
+    <p class="msg" id="gameMsg" role="status" aria-live="polite"></p>
+
+    <section id="latestBox" hidden>
+      <div class="sec-h"><h3>Latest guess</h3></div>
+      <div class="rows" id="latest"></div>
+    </section>
+
+    <section>
+      <div class="sec-h"><h3>All guesses, closest first</h3><span class="muted small" id="count"></span></div>
+      <div class="rows" id="list"></div>
+    </section>
+
+    <div class="foot">
+      <span>Smaller number, closer meaning.</span>
+      <button class="btn btn-quiet btn-small" id="giveUpBtn" type="button" hidden>Give up and reveal</button>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var LEVEL_NOTES = {
+  easy: "Everyday things like dog, house or rain. Best if you are just starting.",
+  medium: "A mix of everyday objects, places and animals.",
+  hard: "Ideas and feelings like freedom or courage. The words are simple, but harder to get close to."
+};
+var level = "easy";
+
+var $ = function(id){ return document.getElementById(id); };
+var store = {
+  get:function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+  set:function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} },
+  del:function(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+function el(tag, cls, text){ var n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; }
+function setMsg(id, text, kind){ var n=$(id); n.textContent=text||""; n.dataset.kind=kind||""; }
+function initial(name){ var c=Array.from((name||"").trim())[0]; return (c||"?").toUpperCase(); }
+function cap(t){ return t.charAt(0).toUpperCase()+t.slice(1); }
+function cleanName(s){ return (s||"").replace(/\s+/g," ").trim().slice(0,16); }
+function fmt(n){ return Number(n).toLocaleString("en-US"); }
+
+/* Rank to bar length and colour. Rank 1 is a full bar, rank 30,000 is nearly empty. */
+function barPct(rank){ if(rank<=1) return 100; return Math.max(3, Math.round(100*(1-Math.log(rank)/Math.log(30000)))); }
+function tone(rank){ return rank<=300 ? "near" : rank<=3000 ? "mid" : "far"; }
+
+/* A random id for this browser, so the server can tell the two players apart. */
+function makePid(){
+  var a="abcdefghijklmnopqrstuvwxyz0123456789", s="";
+  try{ var r=new Uint8Array(24); crypto.getRandomValues(r); for(var i=0;i<24;i++) s+=a[r[i]%a.length]; }
+  catch(e){ for(var j=0;j<24;j++) s+=a[Math.floor(Math.random()*a.length)]; }
+  return s;
+}
+var pid = store.get("cd-pid");
+if(!pid || !/^[A-Za-z0-9]{8,40}$/.test(pid)){ pid=makePid(); store.set("cd-pid",pid); }
+
+var code=null, game=null, v=0, busy=false, inFlight=false, pollTimer=null, giveUpArmed=false, giveUpTimer=null, lost=false;
+var myName = cleanName(store.get("cd-name")||"");
+
+/* ---------- server calls ---------- */
+function call(path, body){
+  var opts = body===undefined
+    ? {method:"GET", cache:"no-store"}
+    : {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)};
+  return fetch(path, opts).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(d){
+      if(!r.ok){ var e=new Error(d.error||"Something went wrong. Try again."); e.status=r.status; throw e; }
+      return d;
+    });
+  }, function(){ var e=new Error("Can’t reach the server. Check your internet and try again."); e.status=0; throw e; });
+}
+
+/* ---------- lobby ---------- */
+function lobbyBusy(on){ $("createBtn").disabled=on; $("joinBtn").disabled=on; $("soloBtn").disabled=on; }
+function readName(optional){
+  var n=cleanName($("name").value);
+  if(!n && optional) return "You";
+  if(!n){ setMsg("lobbyMsg","Enter a name first so your friend knows who is playing.","error"); $("name").focus(); return null; }
+  myName=n; store.set("cd-name",n); return n;
+}
+function createGame(solo){
+  var n=readName(solo); if(!n) return;
+  lobbyBusy(true); setMsg("lobbyMsg","Setting up your game…","busy");
+  call("/api/create",{pid:pid,name:n,level:level,solo:!!solo}).then(function(d){
+    setMsg("lobbyMsg",""); openGame(d);
+  }).catch(function(e){ setMsg("lobbyMsg",e.message,"error"); }).then(function(){ lobbyBusy(false); });
+}
+function joinGame(){
+  var n=readName(false); if(!n) return;
+  var c=$("joinCode").value.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  if(c.length!==4){ setMsg("lobbyMsg","Codes have 4 letters.","error"); $("joinCode").focus(); return; }
+  lobbyBusy(true); setMsg("lobbyMsg","Looking for that game…","busy");
+  call("/api/join",{pid:pid,code:c,name:n}).then(function(d){
+    setMsg("lobbyMsg",""); openGame(d);
+  }).catch(function(e){ setMsg("lobbyMsg",e.message,"error"); }).then(function(){ lobbyBusy(false); });
+}
+
+/* ---------- game loop ---------- */
+function openGame(d){
+  clearTimeout(pollTimer); clearTimeout(giveUpTimer);
+  code=d.code; game=d; v=d.v; busy=false; giveUpArmed=false; lost=false;
+  store.set("cd-code",code);
+  setMsg("gameMsg",""); setMsg("syncNote","");
+  history.replaceState(null,"",location.pathname);
+  render(); schedule();
+}
+function closeGame(){
+  clearTimeout(pollTimer); clearTimeout(giveUpTimer);
+  code=null; game=null; v=0; busy=false; giveUpArmed=false;
+  store.del("cd-code");
+  setMsg("gameMsg",""); setMsg("syncNote","");
+  render();
+}
+function schedule(){
+  clearTimeout(pollTimer);
+  if(!code) return;
+  pollTimer=setTimeout(poll, document.hidden ? 5000 : 1500);
+}
+function poll(){
+  if(!code){ return; }
+  if(inFlight){ schedule(); return; }
+  inFlight=true;
+  var c=code;
+  call("/api/state?code="+encodeURIComponent(c)+"&pid="+pid+"&v="+v).then(function(d){
+    if(c!==code) return;
+    setMsg("syncNote","");
+    if(d.same) return;
+    if(busy) return;   /* the answer to our own move is about to arrive */
+    game=d; v=d.v; render();
+  }).catch(function(e){
+    if(c!==code) return;
+    if(e.status===404){ game=null; lost=true; render(); return; }
+    setMsg("syncNote","Reconnecting…","busy");
+  }).then(function(){ inFlight=false; schedule(); });
+}
+document.addEventListener("visibilitychange",function(){ if(!document.hidden && code){ clearTimeout(pollTimer); poll(); } });
+
+function act(path, extra, pending){
+  if(busy||!game) return;
+  busy=true; render();
+  setMsg("gameMsg",pending||"","busy");
+  var body={pid:pid,code:code}; for(var k in extra) body[k]=extra[k];
+  return call(path,body).then(function(d){
+    game=d; v=d.v; setMsg("gameMsg",""); return d;
+  }).catch(function(e){
+    setMsg("gameMsg",e.message,"error");
+  }).then(function(d){ busy=false; render(); return d; });
+}
+
+function submitGuess(ev){
+  ev.preventDefault();
+  var w=$("guessInput").value.trim().toLowerCase();
+  if(!w){ return; }
+  if(!/^[a-z]+$/.test(w)){ setMsg("gameMsg","Use one word, letters only.","error"); return; }
+  act("/api/guess",{word:w},"Checking “"+w+"”…").then(function(d){
+    if(d && d.guesses && d.guesses.length && d.guesses[d.guesses.length-1].word===w) $("guessInput").value="";
+    if(!$("guessInput").disabled) $("guessInput").focus();
+  });
+}
+function getHint(){
+  act("/api/hint",{}, "Finding a closer word…").then(function(d){
+    if(d && d.guesses && d.guesses.length){ var h=d.guesses[d.guesses.length-1]; if(h.hint) setMsg("gameMsg","Hint added to your list: “"+h.word+"”.",""); }
+  });
+}
+function giveUp(){
+  if(!giveUpArmed){
+    giveUpArmed=true; $("giveUpBtn").textContent="Tap again to reveal";
+    clearTimeout(giveUpTimer);
+    giveUpTimer=setTimeout(function(){ giveUpArmed=false; $("giveUpBtn").textContent="Give up and reveal"; },4000);
+    return;
+  }
+  clearTimeout(giveUpTimer); giveUpArmed=false;
+  act("/api/giveup",{});
+}
+function playAgain(){
+  $("againBtn").disabled=true;
+  call("/api/again",{pid:pid,code:code}).then(function(d){ openGame(d); })
+    .catch(function(e){ setMsg("gameMsg",e.message,"error"); })
+    .then(function(){ $("againBtn").disabled=false; });
+}
+
+/* ---------- rendering ---------- */
+function rowFor(g, names, isLatest){
+  var r=el("div","row r-"+tone(g.rank)+(isLatest?" latest":""));
+  var bar=el("span","bar"); bar.style.width=barPct(g.rank)+"%"; r.append(bar);
+  r.append(el("span","w",g.word));
+  if(g.hint) r.append(el("span","hint-tag","Hint"));
+  if(!game.solo){
+    var who=el("span","who "+g.by,initial(names[g.by])); who.title=names[g.by]; r.append(who);
+  }
+  r.append(el("span","rk",g.rank===1?"Found it":fmt(g.rank)));
+  return r;
+}
+
+function renderPlayers(names, over){
+  var box=$("players"); box.textContent="";
+  box.classList.toggle("solo",!!game.solo);
+  var defs=[["host",names.host,true]];
+  if(!game.solo) defs.push(["guest",names.guest,game.joined]);
+  defs.forEach(function(p){
+    var role=p[0], name=p[1], present=p[2];
+    var all=game.guesses.filter(function(g){ return g.by===role; });
+    var plays=all.filter(function(g){ return !g.hint; }).length, hints=all.length-plays;
+    var card=el("div","pl "+role);
+    if(!game.solo && !over && game.joined && game.turn===role) card.classList.add("active");
+    var top=el("div","pl-top");
+    top.append(el("span","av",present?initial(name):"?"));
+    top.append(el("span","pl-name",name+(game.you===role?" (you)":"")));
+    card.append(top);
+    var stat;
+    if(!present) stat="Not joined yet";
+    else if(!all.length) stat="No guesses yet";
+    else{
+      var best=Math.min.apply(null,all.map(function(g){ return g.rank; }));
+      stat=plays+(plays===1?" guess":" guesses")+(hints?" + "+hints+(hints===1?" hint":" hints"):"")+" · best "+(best===1?"found it":"#"+fmt(best));
+    }
+    card.append(el("div","pl-stat",stat));
+    box.append(card);
+  });
+}
+
+function render(){
+  var inGame=!!code;
+  $("lobby").hidden=inGame; $("game").hidden=!inGame; $("leaveBtn").hidden=!inGame;
+  if(!inGame) return;
+  $("codeVal").textContent=code;
+  if(!game){
+    $("codeChip").hidden=false; $("levelTag").textContent="";
+    $("players").textContent=""; $("banner").hidden=true; $("guessForm").hidden=true; $("hintRow").hidden=true; $("latestBox").hidden=true; $("list").textContent=""; $("giveUpBtn").hidden=true; $("count").textContent="";
+    $("turn").textContent = lost ? "This game no longer exists. Leave and start a new one." : "Loading game…";
+    return;
+  }
+  var solo=!!game.solo, role=game.you, guesses=game.guesses, over=game.over;
+  $("codeChip").hidden=solo;
+  $("levelTag").textContent="Level: "+cap(game.level||"medium");
+  var names={host:game.hostName||"Player 1", guest:game.joined?(game.guestName||"Player 2"):"Waiting…"};
+  var win=guesses.find(function(g){ return g.rank===1; });
+  var plays=guesses.filter(function(g){ return !g.hint; }).length, hintCount=guesses.length-plays;
+  var myTurn=!over && role!=="spectator" && (solo || (game.joined && role===game.turn));
+
+  renderPlayers(names, over);
+
+  var banner=$("banner");
+  if(over){
+    banner.hidden=false;
+    $("bannerTag").textContent = win ? "Word found" : "Word revealed";
+    $("bannerWord").textContent = game.secret || "";
+    var gtxt=plays+(plays===1?" guess":" guesses")+(hintCount?" and "+hintCount+(hintCount===1?" hint":" hints"):"");
+    $("bannerSub").textContent = win
+      ? (solo ? "You found it in "+gtxt+"." : names[win.by]+" found it in "+gtxt+" between you.")
+      : (solo ? "Better luck next round." : "Nobody found it this time.");
+    $("againBtn").hidden = role==="spectator";
+    $("againBtn").textContent = (!solo && game.next) ? "Join rematch" : "Play again";
+  } else banner.hidden=true;
+
+  var t="";
+  if(over) t="";
+  else if(role==="spectator") t = game.joined ? "This game already has two players. You can watch." : "";
+  else if(solo) t="Type a word.";
+  else if(!game.joined) t = role==="host" ? "Waiting for your friend. Send them the invite below." : "Waiting for a second player.";
+  else if(myTurn) t="Your turn. Type a word.";
+  else t=names[game.turn]+"’s turn.";
+  $("turn").textContent=t;
+
+  var showForm=!over && role!=="spectator" && (solo || game.joined);
+  $("guessForm").hidden=!showForm;
+  var canType = myTurn && !busy;
+  $("guessInput").disabled=!canType; $("guessBtn").disabled=!canType;
+  $("guessInput").placeholder = myTurn ? "Type one word" : "Waiting for your turn";
+
+  var best=guesses.length ? Math.min.apply(null,guesses.map(function(g){ return g.rank; })) : 30000;
+  $("hintRow").hidden=!showForm;
+  $("hintBtn").disabled=!canType || best<=2;
+  $("hintNote").textContent = best<=2 ? "You are at rank 2, the closest a hint goes." : "Adds a closer word to your list. Does not use your turn.";
+
+  $("giveUpBtn").hidden = over || role==="spectator" || (!solo && !game.joined);
+
+  var latest=guesses[guesses.length-1];
+  $("latestBox").hidden=!latest;
+  $("latest").textContent="";
+  if(latest) $("latest").append(rowFor(latest,names,true));
+
+  var list=$("list"); list.textContent="";
+  $("count").textContent = guesses.length ? guesses.length+(guesses.length===1?" word":" words") : "";
+  if(!guesses.length){
+    list.append(el("div","empty", (solo||game.joined) ? "No guesses yet. The first word sets the scale." : "Guesses from both players will appear here."));
+  } else {
+    guesses.slice().sort(function(a,b){ return a.rank-b.rank || a.n-b.n; }).forEach(function(g){ list.append(rowFor(g,names,false)); });
+  }
+}
+
+/* ---------- wiring ---------- */
+$("createBtn").addEventListener("click", function(){ createGame(false); });
+$("soloBtn").addEventListener("click", function(){ createGame(true); });
+$("hintBtn").addEventListener("click", getHint);
+$("joinBtn").addEventListener("click", joinGame);
+$("joinCode").addEventListener("input", function(e){ e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""); });
+$("joinCode").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); joinGame(); } });
+$("name").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); createGame(false); } });
+$("guessForm").addEventListener("submit", submitGuess);
+$("againBtn").addEventListener("click", playAgain);
+$("giveUpBtn").addEventListener("click", giveUp);
+$("leaveBtn").addEventListener("click", closeGame);
+$("copyBtn").addEventListener("click", function(){
+  var b=$("copyBtn"), text="Join my Context Duel game! Open "+location.origin+" , type the code "+code+" and tap Join.";
+  function done(t){ b.textContent=t; setTimeout(function(){ b.textContent="Copy invite"; },1800); }
+  try{
+    navigator.clipboard.writeText(text).then(function(){ done("Copied"); }, function(){ done("Copy failed"); });
+  }catch(e){ done("Copy failed"); }
+});
+
+function setLevel(l){
+  if(!LEVEL_NOTES[l]) l="easy";
+  level=l; store.set("cd-level",l);
+  Array.prototype.forEach.call(document.querySelectorAll("#levelSeg button"),function(b){ b.setAttribute("aria-checked",b.dataset.level===l?"true":"false"); });
+  $("levelNote").textContent=LEVEL_NOTES[l];
+}
+Array.prototype.forEach.call(document.querySelectorAll("#levelSeg button"),function(b){ b.addEventListener("click",function(){ setLevel(b.dataset.level); }); });
+setLevel(store.get("cd-level")||"easy");
+$("name").value=myName;
+render();
+
+/* Come back to a game in progress after a reload. */
+var saved=store.get("cd-code");
+if(saved){
+  call("/api/state?code="+encodeURIComponent(saved)+"&pid="+pid+"&v=0").then(function(d){
+    if(d.you && d.you!=="spectator") openGame(d); else store.del("cd-code");
+  }).catch(function(){ store.del("cd-code"); });
+}
+})();
+</script>
+</body>
+</html>

@@ -1,91 +1,81 @@
-# Context Duel 🎯
+# Context Duel
 
-> **A real-time, turn-based multiplayer word semantic game created and developed by [Piyush Gupta](https://github.com/Piyush-Gupta04).**
+Hey! I built **Context Duel** — a multiplayer word game where you guess a secret word based on its *meaning*, not its letters.
 
-🎮 **Live Game Link (Play Anytime on Mobile or PC)**:  
+Instead of telling you which letters are right (like Wordle), every guess gets a rank based on how close its meaning is to the secret word. Rank 1 is the secret word itself. If you guess a word and get rank 25, you're super warm. If you get rank 18,000, you're way off.
+
+You can play it on your phone or laptop right now:  
 👉 **[https://context-duel.onrender.com](https://context-duel.onrender.com)**
 
----
-
-## 🌐 24/7 Cloud Deployment
-
-The game is **live and hosted around the clock** in the cloud on Render. 
-
-- **Play Anytime**: Accessible 24/7 from any smartphone, tablet, or computer.
-- **Zero Install**: Runs straight in your mobile browser (Safari, Chrome, etc.) with no apps to download or accounts to create.
-- **Always Online**: Hosted independently on cloud infrastructure — runs continuously even when the developer's computer is completely shut down.
+*(It's deployed 24/7 on Render, so anyone can open the link and play anytime, even when my laptop is shut down!)*
 
 ---
 
-## 📖 What is Context Duel?
+## Why I made this
 
-Context Duel is a competitive, contextual word-association game. 
+I love games like Contexto, but I wanted a clean 1v1 version that I could play with friends in real time without downloading an app, making an account, or dealing with ads. 
 
-Instead of guessing spelling or letter positions, you compete to discover a hidden secret word based purely on **meaning and semantic similarity**:
-
-- The engine evaluates every guess against a 30,000-word dictionary using vector embeddings.
-- Every guess receives an instant proximity rank from **1 to 30,000**:
-  - **Rank 1**: The hidden secret word itself (Winner!).
-  - **Rank 2 – 300**: Extremely hot! You are right around the concept.
-  - **Rank 301 – 1,500**: Warm, closely related category or theme.
-  - **Rank 1,501+**: Cold, distant semantic meaning.
+Just send a 4-letter room code to a friend on WhatsApp or Discord, jump in, and start taking turns.
 
 ---
 
-## 📱 How to Play (Mobile & Desktop)
+## How to play
 
-### 1. Two-Player Live Duel (1v1)
-1. Open **[https://context-duel.onrender.com](https://context-duel.onrender.com)** on your phone or PC.
-2. Enter your player name, select a difficulty (**Easy**, **Medium**, or **Hard**), and tap **Create a game for two**.
-3. Copy the **4-letter game room code** and send it to your friend (via WhatsApp, iMessage, Discord, etc.).
-4. Your friend opens the link on their phone, types their name, enters the 4-letter code under **Join**, and jumps in.
-5. Take alternating turns submitting guesses. Both players see every guess and its rank update in real-time.
-6. The first player to submit the secret word (**Rank 1**) wins the duel!
+### 1v1 Mode (with a friend)
+1. Head over to [context-duel.onrender.com](https://context-duel.onrender.com).
+2. Enter your name, choose a difficulty (Easy, Medium, or Hard), and hit **Create a game for two**.
+3. You'll get a 4-letter code (like `ABCD`). Send it to your friend.
+4. Your friend goes to the same link, types their name, puts the code under **Join**, and clicks Join.
+5. Take turns typing words. Every time you or your friend guesses, you both see the word and its rank in real-time.
+6. Whoever hits **Rank 1** (the exact word) wins!
 
-### 2. Solo Practice Mode
-- Want to train your vocabulary alone? Tap **Solo** on the home screen to find the secret word in as few turns as possible.
+### Solo Mode
+If nobody is around to play, just choose **Solo** on the home screen and see how few guesses you need to reach rank 1.
 
-### 3. Smart Hints
-- If you and your opponent are stuck, you can use the **Hint** button on your turn.
-- The hint system gives a simpler, common word that moves you closer to the target without revealing ranks below 2.
+### Quick Example
+Suppose the hidden word is **`ocean`**:
+- Guess `pizza` -> Rank #16,420 (completely cold)
+- Guess `ship` -> Rank #620 (getting somewhere)
+- Guess `water` -> Rank #38 (very hot!)
+- Guess `sea` -> Rank #3 (almost there!)
+- Guess `ocean` -> **Rank #1 — You win!**
 
----
-
-## 🛠️ Technical Highlights
-
-- **Zero NPM Dependencies**: Built 100% on native Node.js core modules (`http`, `fs`, `path`). No third-party package dependencies, zero supply-chain risk, and zero bloat.
-- **Fast In-Memory Vector Search**: 100-dimensional quantized word vectors (~3 MB) deliver sub-millisecond ranking calculations across 30,000 words.
-- **Real-Time Memory State**: Active rooms and turns are tracked efficiently in lightweight server memory with automatic garbage collection after periods of inactivity.
-- **Hardened Security**: Includes defense-in-depth HTTP headers (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`), per-IP rate limiting, and strict path boundary checks.
-- **Responsive Mobile UI**: Pure vanilla CSS with dynamic dark/light theme support, custom typography, and touch-optimized controls.
+### Stuck? Use a hint
+On your turn, you can hit **Hint**. It won't give away the win (it never gives anything below rank 2), but it gives you a simpler related word to point you in the right direction.
 
 ---
 
-## 💻 Local Development (Optional)
+## How it works under the hood
 
-If you wish to clone and run the project locally on your machine:
+A few things about how I built this:
 
-### Prerequisites
-- Node.js 18 or newer
-
-### Quick Start
-```bash
-# 1. Clone the repository
-git clone https://github.com/Piyush-Gupta04/context-duel.git
-cd context-duel
-
-# 2. Start the server (no npm install needed!)
-node server.js
-
-# 3. Open in your browser
-http://localhost:3000
-```
+- **Zero npm packages**: The entire backend (`server.js`) uses only native Node.js (`http`, `fs`, `path`). No `node_modules` folder, no third-party dependencies.
+- **Word vectors**: It uses GloVe word embeddings compressed into a 3 MB binary file (`data/vectors.bin`). When a round starts, the server ranks all 30,000 words against the secret word in memory using cosine similarity. It takes just a few milliseconds.
+- **No database needed**: Games run entirely in memory on the server and clean themselves up after 12 hours of inactivity.
+- **Mobile-friendly**: The UI is written in plain HTML/CSS/JS and sized to feel like a native app on mobile screens, complete with light and dark mode.
 
 ---
 
-## 👨‍💻 Developer & Credits
+## Running it locally
+
+If you want to run it on your own machine:
+
+1. Make sure you have **Node 18+** installed.
+2. Clone this repo:
+   ```bash
+   git clone https://github.com/Piyush-Gupta04/context-duel.git
+   cd context-duel
+   ```
+3. Run the server (no `npm install` needed!):
+   ```bash
+   node server.js
+   ```
+4. Open `http://localhost:3000` in your browser.
+
+---
+
+## Built by
 
 **Piyush Gupta**  
-- GitHub: [@Piyush-Gupta04](https://github.com/Piyush-Gupta04)  
-- Live Game: [https://context-duel.onrender.com](https://context-duel.onrender.com)  
-- Repository: [Piyush-Gupta04/context-duel](https://github.com/Piyush-Gupta04/context-duel)
+GitHub: [@Piyush-Gupta04](https://github.com/Piyush-Gupta04)  
+Feel free to open an issue or share feedback if you play it and find any fun word combos or bugs!

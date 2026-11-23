@@ -1,88 +1,78 @@
 # Context Duel
 
-A fast, real-time two-player word closeness game running with zero runtime npm dependencies.
+An online, turn-based multiplayer word semantic battle developed by **Piyush Gupta**.
 
-Take turns guessing the secret word. Every guess is scored based on semantic similarity using word vector embeddings (rank 1 is the hidden secret word). The first player to guess the exact word wins!
+- **Live Web Application**: [https://context-duel.onrender.com](https://context-duel.onrender.com)
+- **Developer**: [Piyush Gupta (Piyush-Gupta04)](https://github.com/Piyush-Gupta04)
 
-## Features
+---
 
-- **Multiplayer & Solo Modes**: Play with a friend via 4-letter room codes or practice solo.
-- **Difficulty Levels**: Easy, Medium, and Hard word pools.
-- **Smart Hints**: Hints guide players toward closer words without spoiling words below rank 2.
-- **Zero NPM Dependencies**: Runs entirely on native Node.js standard libraries (`http`, `fs`, `path`).
-- **Low Footprint & Secure**: Built-in rate limiting per IP, strict path traversal validation, and security HTTP headers (`nosniff`, `DENY` clickjacking protection, referrer privacy).
+## What is Context Duel?
 
-## Project Structure
+Context Duel is a vocabulary and meaning-association guessing game where players compete to find a hidden secret word.
 
-```
-.
-├── server.js          # HTTP game server and ranking engine (native Node.js)
-├── package.json       # Project metadata and start script
-├── .env.example       # Example environment variables
-├── .gitignore         # Ignores sensitive keys, env files, and OS artifacts
-├── build_data.py      # Data generation script using GloVe embeddings (optional)
-├── public/
-│   └── index.html     # Client single-page application (HTML, CSS, JS)
-└── data/
-    ├── words.txt      # 30,000 vocabulary words
-    ├── vectors.bin    # 100-dimensional quantized word vectors (~3 MB)
-    └── secrets.json   # Dictionary of secret target words per difficulty
-```
+Unlike letter-based puzzle games, Context Duel measures **contextual meaning**:
+- The server evaluates guesses against a 30,000-word dataset using vector embeddings.
+- Every word receives a numeric proximity score from 1 to 30,000.
+- **Rank 1** is the secret target word itself.
+- Lower ranks mean your guess is closer in concept to the hidden word.
 
-> **Note on `data/secrets.json`**: This file contains the word lists (target puzzle answers such as "ocean" or "bridge"), not sensitive credentials or API keys. Keep this file tracked in git so deployments can run out of the box.
+---
 
-## Getting Started
+## How to Play
 
-### Prerequisites
+### 1. Multiplayer Mode (Duel)
+1. Open [https://context-duel.onrender.com](https://context-duel.onrender.com).
+2. Type your name, pick a difficulty (Easy, Medium, or Hard), and select **Create a game for two**.
+3. Send the generated 4-letter room code to your friend.
+4. Your friend visits the link, enters their name and the 4-letter code under **Join**, and enters the room.
+5. Take turns submitting words. Both players see all guesses and ranks in real-time.
+6. The first player to submit the secret word (Rank 1) wins the match!
 
-- Node.js 18 or newer
+### 2. Solo Practice Mode
+- Choose **Solo** on the home screen to test and sharpen your word association skills at your own pace.
 
-### Local Development
+### 3. Understanding the Ranks
+- **Rank 1**: The exact target word (Victory!).
+- **Ranks 2 - 300**: Extremely close in concept or theme (Green indicator).
+- **Ranks 301 - 1,500**: Related context or category (Yellow indicator).
+- **Ranks 1,501+**: Distant concept (Gray indicator).
 
-1. Clone or download this repository.
-2. Start the server:
+### 4. Hints
+- During your turn, you can take a hint if you need guidance. The system will reveal a simpler related word to help narrow your search without spoiling rank 1.
+
+---
+
+## Technical Architecture
+
+- **Zero NPM Runtime Dependencies**: The entire backend server runs solely on native Node.js core modules (`http`, `fs`, `path`), eliminating package vulnerabilities and heavy dependencies.
+- **Vector Space Matching**: Evaluates 100-dimensional quantized word vectors in memory, delivering instant ranking calculations.
+- **In-Memory Game Engine**: Game sessions and turns are synchronized in lightweight server memory with automatic cleanup of inactive rooms.
+- **Built-in Security**: Includes defense-in-depth headers, per-IP request rate limiting, and strict path boundary checks.
+- **Responsive Web Client**: Accessible across smartphones, tablets, and desktop computers with native dark/light theme support.
+
+---
+
+## Local Setup
+
+### Requirements
+- Node.js version 18 or higher
+
+### Steps
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Piyush-Gupta04/context-duel.git
+   cd context-duel
+   ```
+2. Start the application:
    ```bash
    node server.js
    ```
-3. Open your browser at `http://localhost:3000`.
+3. Open `http://localhost:3000` in your web browser.
 
-### Environment Configuration
+---
 
-You can configure runtime settings via environment variables (or copy `.env.example` to `.env` if using a local manager):
+## Author
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | Port for the HTTP server |
-| `RATE_LIMIT` | `600` | Maximum requests per minute per IP |
-
-## Deploying to Production
-
-The server requires a Node.js runtime environment.
-
-### Deploying to Render
-
-1. Push your repository to GitHub.
-2. In [Render](https://render.com), create a new **Web Service**.
-3. Connect your GitHub repository.
-4. Set:
-   - **Runtime**: `Node`
-   - **Build Command**: *(leave empty)*
-   - **Start Command**: `node server.js`
-5. Click **Deploy**.
-
-## Pushing to GitHub
-
-To publish this project to a new GitHub repository:
-
-```bash
-git init
-git add .
-git commit -m "Initial commit: Context Duel game"
-git branch -M main
-git remote add origin https://github.com/<YOUR_USERNAME>/<YOUR_REPOSITORY>.git
-git push -u origin main
-```
-
-## License
-
-This project is licensed under the MIT License.
+- **Piyush Gupta**  
+  GitHub: [@Piyush-Gupta04](https://github.com/Piyush-Gupta04)
